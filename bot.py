@@ -3,8 +3,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
 # টোকেন ও অ্যাডমিন আইডি
-TOKEN ="8629892440:AAHdMFBKF8uMv4XfBb3iaLOrImINb8sbH6c"
-ADMIN_ID =6578678699
+TOKEN = "8629892440:AAHdMFBKF8uMv4XfBb3iaLOrImINb8sbH6c"
+ADMIN_ID = 6578678699
 
 AD_LINKS = [
     "https://www.effectivegatecpm.com/c5bkk9ri?key=e70ce0917c41f2b210097d5e180434ff",
