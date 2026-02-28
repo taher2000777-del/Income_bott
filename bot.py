@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
 # আপনার নতুন টোকেনটি এখানে বসান (BotFather থেকে নেওয়া)
-TOKEN ="8629892440:AAHdMFBKf8UmV4XfBb3iaLOrImINb8sbH6c"
+TOKEN = "8629892440:AAHdMFBKf8UmV4XfBb3iaLOrImINb8sbH6c"
 ADMIN_ID = 6578678699
 
 AD_LINKS = [
