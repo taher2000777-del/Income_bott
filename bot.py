@@ -2,7 +2,7 @@ import sqlite3, time, random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
-# আপনার টোকেন ও আইডি (বদলানোর দরকার নেই)
+# আপনার টোকেন ও আইডি
 TOKEN = "8629892440:AAHdMFBKf8UmV4XfBb3iaLOrImINb8sbH6c"
 ADMIN_ID = 6578678699
 
@@ -14,8 +14,8 @@ conn.commit()
 
 # ইনকাম লিংক
 AD_LINKS = [
-    "https://www.effectivegatecpm.com/c5bkk9ri?key=...",
-    "https://www.effectivegatecpm.com/d1fbg3v9?key=..."
+    "https://www.effectivegatecpm.com/c5bkk9ri?key=c8f7c78728555572c9078a0a2fa04107",
+    "https://www.effectivegatecpm.com/d1fbg3v9?key=23c7dd7b9f21469d099225a717c8f556"
 ]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,6 +60,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == 'help':
         await query.message.reply_text("❓ সাহায্য প্রয়োজন? আমাদের অ্যাডমিনকে মেসেজ দিন।")
+    
+    elif query.data == 'withdraw':
+        await query.message.reply_text("💳 মিনিমাম উইথড্র **৫০ টাকা**। কাজ চালিয়ে যান!")
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
