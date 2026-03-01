@@ -4,7 +4,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
 # আপনার সঠিক টোকেন ও আইডি
-TOKEN = "8629892440:AAHdMFBKf8UmV4XfBb3iaLOrImINb8sbH6c"
+TOKEN = "8629892440:AAFg8jGPFc9UTzFj1CaBNlMqdrjnq38nGzg"
 ADMIN_ID = 6578678699
 
 # ডেটাবেস সেটআপ
