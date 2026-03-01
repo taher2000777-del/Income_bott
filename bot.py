@@ -1,8 +1,9 @@
-import sqlite3, time, random
+import sqlite3
+import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
-# আপনার টোকেন ও আইডি
+# আপনার সঠিক টোকেন ও আইডি
 TOKEN = "8629892440:AAHdMFBKf8UmV4XfBb3iaLOrImINb8sbH6c"
 ADMIN_ID = 6578678699
 
@@ -17,7 +18,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cursor.execute("INSERT OR IGNORE INTO users (id) VALUES (?)", (user_id,))
     conn.commit()
 
-    # প্রফেশনাল বাটন ডিজাইন
+    # প্রফেশনাল মেনু বাটন ডিজাইন
     keyboard = [
         [InlineKeyboardButton("💰 Balance", callback_data='bal'), InlineKeyboardButton("📊 Rank", callback_data='rank')],
         [InlineKeyboardButton("🚀 Start Earning", callback_data='earn')],
@@ -40,13 +41,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     if query.data == 'bal':
-        await query.message.reply_text("💰 আপনার ব্যালেন্স চেক করতে আমাদের চ্যানেলে জয়েন করুন।")
+        await query.message.reply_text("💰 আপনার ব্যালেন্স: **০.০০ টাকা**", parse_mode='Markdown')
     elif query.data == 'earn':
-        await query.message.reply_text("🚀 ইনকাম শুরু করতে নিচের লিংকে ক্লিক করুন!")
+        await query.message.reply_text("🚀 ইনকাম করতে আমাদের নতুন টাস্কগুলো সম্পন্ন করুন!")
     elif query.data == 'withdraw':
         await query.message.reply_text("💳 মিনিমাম উইথড্র ৫০ টাকা।")
     elif query.data == 'help':
-        await query.message.reply_text("❓ সাহায্যের জন্য অ্যাডমিনকে মেসেজ দিন।")
+        await query.message.reply_text(f"❓ সাহায্যের জন্য অ্যাডমিনকে (@{ADMIN_ID}) মেসেজ দিন।")
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
