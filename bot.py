@@ -6,8 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Callb
 # ১. আপনার নতুন টোকেনটি এখানে বসান
 TOKEN = "8629892440:AAFg8jGPFc9UTzFj1CaBNlMqdrjnq38nGzg"
 # ২. আপনার টেলিগ্রাম ইউজারনেম এখানে দিন (যেমন: @YourUsername)
-MY_USERNAME = "@Molla019" 
-
+MY_USERNAME = "t.me/Molla019
 # ডেটাবেস কানেকশন
 conn = sqlite3.connect("income_bot.db", check_same_thread=False)
 cursor = conn.cursor()
