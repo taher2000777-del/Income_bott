@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Callb
 TOKEN = "8629892440:AAFg8jGPFc9UTzFj1CaBNlMqdrjnq38nGzg" 
 ADMIN_ID = 6578678699 
 ADMIN_USERNAME = "Molla019" 
-LOG_CHANNEL_ID = -1003732172008 # আপনার চ্যানেল আইডি
+LOG_CHANNEL_ID = -1003732172008# আপনার চ্যানেল আইডি
 
 YT_LINK = "https://www.youtube.com/@skFarhan-u7z" 
 TIKTOK_LINK = "https://www.tiktok.com/@user469378505" 
