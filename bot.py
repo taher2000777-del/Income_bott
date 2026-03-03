@@ -6,11 +6,11 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Callb
 TOKEN = "8629892440:AAFg8jGPFc9UTzFj1CaBNlMqdrjnq38nGzg" 
 ADMIN_ID = 6578678699 
 ADMIN_USERNAME = "Molla019" 
-LOG_CHANNEL_ID = -1003732172008  # আপনার চ্যানেল আইডি (বটকে এখানে অ্যাডমিন করতে হবে)
+LOG_CHANNEL_ID = -1003732172008  # আপনার চ্যানেল আইডি
 
 YT_LINK = "https://www.youtube.com/@skFarhan-u7z" 
 TIKTOK_LINK = "https://www.tiktok.com/@user469378505" 
-MIN_WITHDRAW = 20 # সর্বনিম্ন ২০ টাকা হলে উইথড্র করা যাবে
+MIN_WITHDRAW = 20 
 
 # --- ২. ডাটাবেস সেটআপ ---
 conn = sqlite3.connect("income_master.db", check_same_thread=False)
@@ -18,7 +18,6 @@ cursor = conn.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, balance REAL DEFAULT 0)")
 conn.commit()
 
-# --- ৩. মেইন মেনু বাটন ফাংশন ---
 def get_main_menu():
     keyboard = [
         [InlineKeyboardButton("🔴 Subscribe YouTube", url=YT_LINK)],
@@ -30,115 +29,90 @@ def get_main_menu():
     return InlineKeyboardMarkup(keyboard)
 
 # --- ৪. ফাংশনসমূহ ---
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     cursor.execute("INSERT OR IGNORE INTO users (id) VALUES (?)", (user_id,))
     conn.commit()
-    await update.message.reply_text("👋 স্বাগতম! কাজ শুরু করতে নিচের বাটনগুলো ব্যবহার করুন।", reply_markup=get_main_menu())
+    await update.message.reply_text("👋 স্বাগতম!", reply_markup=get_main_menu())
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
-    user_id = query.from_user.id
+    user_id = query.from_user.id # আপনার সংশোধনী অনুযায়ী
     await query.answer()
 
     if data == 'bal':
         cursor.execute("SELECT balance FROM users WHERE id=?", (user_id,))
         result = cursor.fetchone()
         bal = result[0] if result else 0
-        await query.edit_message_text(f"💰 আপনার বর্তমান ব্যালেন্স: {bal:.2f} টাকা", 
+        await query.edit_message_text(f"💰 বর্তমান ব্যালেন্স: {bal:.2f} টাকা", 
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='main_menu')]]))
     
     elif data == 'withdraw':
         cursor.execute("SELECT balance FROM users WHERE id=?", (user_id,))
         result = cursor.fetchone()
         bal = result[0] if result else 0
-        
         if bal < MIN_WITHDRAW:
-            await query.message.reply_text(f"❌ আপনার পর্যাপ্ত ব্যালেন্স নেই! (মিনিমাম {MIN_WITHDRAW} টাকা লাগবে)")
+            await query.message.reply_text(f"❌ মিনিমাম {MIN_WITHDRAW} টাকা লাগবে।")
         else:
-            await query.edit_message_text(f"💸 আপনার ব্যালেন্স {bal:.2f} টাকা।\n\nউইথড্র করতে আপনার বিকাশ/নগদ নম্বরটি এখানে মেসেজ হিসেবে লিখুন।", 
+            await query.edit_message_text(f"💸 ব্যালেন্স {bal:.2f} টাকা।\nনম্বরটি মেসেজ করুন।", 
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='main_menu')]]))
             context.user_data['waiting_for_number'] = True
 
     elif data == 'main_menu':
-        await query.edit_message_text("👋 মেইন মেনু: কাজ শুরু করতে নিচে ক্লিক করুন।", reply_markup=get_main_menu())
+        await query.edit_message_text("👋 মেইন মেনু:", reply_markup=get_main_menu())
 
     elif data == 'submit_proof':
-        await query.edit_message_text("📸 অনুগ্রহ করে আপনার কাজের স্ক্রিনশটটি (Photo) এখানে পাঠান।", 
+        await query.edit_message_text("📸 স্ক্রিনশট পাঠান।", 
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='main_menu')]]))
 
-    # এডমিন এপ্রুভাল হ্যান্ডেল (এই অংশটি শুধুমাত্র এডমিন ব্যবহার করতে পারবে)
     elif data.startswith("app_") or data.startswith("rej_"):
-        if query.from_user.id != ADMIN_ID:
-            return
-        
+        if query.from_user.id != ADMIN_ID: return
         parts = data.split("_")
-        action = parts[0]
-        target_user_id = int(parts[1])
+        action, target_id = parts[0], int(parts[1])
 
         if action == "app":
             amount = float(parts[2])
-            cursor.execute("UPDATE users SET balance = balance + ? WHERE id=?", (amount, target_user_id))
+            cursor.execute("UPDATE users SET balance = balance + ? WHERE id=?", (amount, target_id))
             conn.commit()
-            await query.edit_message_caption(caption=query.message.caption + f"\n\n✅ Approved! {amount} TK Added.")
-            try:
-                await context.bot.send_message(chat_id=target_user_id, text=f"💰 অভিনন্দন! আপনার প্রুফটি এপ্রুভ হয়েছে এবং {amount} টাকা যোগ হয়েছে।")
+            await query.edit_message_caption(caption=f"✅ Approved! {amount} TK Added.")
+            try: await context.bot.send_message(chat_id=target_id, text=f"💰 {amount} টাকা যোগ হয়েছে।")
             except: pass
-        
         elif action == "rej":
-            await query.edit_message_caption(caption=query.message.caption + f"\n\n❌ Rejected!")
-            try:
-                await context.bot.send_message(chat_id=target_user_id, text="❌ আপনার পাঠানো স্ক্রিনশটটি রিজেক্ট করা হয়েছে। সঠিক প্রুফ দিন।")
+            await query.edit_message_caption(caption="❌ Rejected!")
+            try: await context.bot.send_message(chat_id=target_id, text="❌ প্রুফ সঠিক নয়।")
             except: pass
 
-# টেক্সট মেসেজ হ্যান্ডেলার (নম্বর নেওয়ার জন্য)
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if context.user_data.get('waiting_for_number'):
         text = update.message.text
         cursor.execute("SELECT balance FROM users WHERE id=?", (user_id,))
         bal = cursor.fetchone()[0]
-        
-        # লগ চ্যানেলে পেমেন্ট রিকোয়েস্ট পাঠানো
         await context.bot.send_message(chat_id=LOG_CHANNEL_ID, 
-                                     text=f"💸 **পেমেন্ট রিকোয়েস্ট!**\n👤 নাম: {update.effective_user.first_name}\n🆔 আইডি: `{user_id}`\n💰 পরিমাণ: {bal:.2f} TK\n📞 নম্বর: `{text}`")
-        
-        # ব্যালেন্স ০ করে দেওয়া
+                                     text=f"💸 **উইথড্র রিকোয়েস্ট!**\n🆔 `{user_id}`\n💰 পরিমাণ: {bal:.2f}\n📞 নম্বর: `{text}`")
         cursor.execute("UPDATE users SET balance = 0 WHERE id=?", (user_id,))
         conn.commit()
         context.user_data['waiting_for_number'] = False
-        await update.message.reply_text("✅ আপনার উইথড্র রিকোয়েস্ট পাঠানো হয়েছে!", reply_markup=get_main_menu())
+        await update.message.reply_text("✅ রিকোয়েস্ট পাঠানো হয়েছে!", reply_markup=get_main_menu())
 
-# ফটো/স্ক্রিনশট হ্যান্ডেলার
 async def handle_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     photo_id = update.message.photo[-1].file_id
-    
-    # এডমিন প্যানেলের জন্য বাটন তৈরি
     keyboard = [[InlineKeyboardButton("✅ Approve 5 TK", callback_data=f"app_{user.id}_5")],
                 [InlineKeyboardButton("❌ Reject", callback_data=f"rej_{user.id}")]]
-    
     try:
-        await context.bot.send_photo(
-            chat_id=LOG_CHANNEL_ID, 
-            photo=photo_id, 
-            caption=f"📩 **নতুন প্রুফ**\n👤 নাম: {user.first_name}\n🆔 আইডি: `{user.id}`", 
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        await update.message.reply_text("✅ আপনার প্রুফটি জমা হয়েছে। এডমিন চেক করলে ব্যালেন্স পাবেন।", reply_markup=get_main_menu())
+        await context.bot.send_photo(chat_id=LOG_CHANNEL_ID, photo=photo_id, 
+                                   caption=f"📩 **নতুন প্রুফ**\n👤 {user.first_name}\n🆔 `{user.id}`", 
+                                   reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text("✅ জমা হয়েছে।", reply_markup=get_main_menu())
     except:
-        await update.message.reply_text("⚠️ এরর: বটকে আপনার লগ চ্যানেলে 'Admin' হিসেবে যুক্ত করুন।")
+        await update.message.reply_text("⚠️ এরর: বটকে চ্যানেলে এডমিন করুন।")
 
-# --- ৫. মেইন রানার ---
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
-    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.PHOTO, handle_proof))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), message_handler))
-    
-    print("Bot is working...")
     app.run_polling()
