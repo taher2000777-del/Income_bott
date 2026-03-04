@@ -56,63 +56,81 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if bal < MIN_WITHDRAW:
             await query.message.reply_text(f"❌ আপনার পর্যাপ্ত ব্যালেন্স নেই! (মিনিমাম {MIN_WITHDRAW} টাকা লাগবে)")
         else:
-            await query.edit_message_text(f"💸 ব্যালেন্স {bal:.2f} টাকা।\n\nউইথড্র করতে আপনার বিকাশ/নগদ নম্বরটি এখানে মেসেজ করুন।", 
-                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='main_menu')]]))
+            await query.edit_message_text(f"💸 ব্যালেন্স {bal:.2f} টাকা।\n\nউইথড্র করতে আপনার বিকাশ/নগদ নম্বরটি এখানে মেসেজ করুন।")
             context.user_data['waiting_for_number'] = True
 
     elif data == 'main_menu':
         await query.edit_message_text("👋 মেইন মেনু:", reply_markup=get_main_menu())
 
     elif data == 'submit_proof':
-        await query.edit_message_text("📸 অনুগ্রহ করে আপনার কাজের স্ক্রিনশটটি (Photo) এখানে পাঠান।", 
-                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='main_menu')]]))
+        await query.edit_message_text("📸 অনুগ্রহ করে আপনার কাজের স্ক্রিনশটটি (Photo) এখানে পাঠান।")
+        context.user_data['waiting_for_screenshot'] = True # স্ক্রিনশটের জন্য স্টেট অন করা
 
-    elif data.startswith("app_") or data.startswith("rej_"):
+    elif data.startswith("app_"):
         if query.from_user.id != ADMIN_ID: return
+        # app_userid_amount
         parts = data.split("_")
-        action, target_id = parts[0], int(parts[1])
-        if action == "app":
-            amount = float(parts[2])
-            cursor.execute("UPDATE users SET balance = balance + ? WHERE id=?", (amount, target_id))
-            conn.commit()
-            await query.edit_message_caption(caption=f"✅ Approved! {amount} TK Added.")
-            try: await context.bot.send_message(chat_id=target_id, text=f"💰 অভিনন্দন! আপনার প্রুফ এপ্রুভ হয়েছে এবং {amount} টাকা যোগ হয়েছে।")
-            except: pass
-        elif action == "rej":
-            await query.edit_message_caption(caption="❌ Rejected!")
-            try: await context.bot.send_message(chat_id=target_id, text="❌ আপনার প্রুফটি সঠিক নয়।")
-            except: pass
+        target_id = int(parts[1])
+        amount = float(parts[2])
+        
+        cursor.execute("UPDATE users SET balance = balance + ? WHERE id=?", (amount, target_id))
+        conn.commit()
+        await query.edit_message_caption(caption=f"✅ Approved! {amount} TK Added.")
+        try: await context.bot.send_message(chat_id=target_id, text=f"💰 অভিনন্দন! আপনার প্রুফ এপ্রুভ হয়েছে এবং {amount} টাকা যোগ হয়েছে।")
+        except: pass
+
+    elif data.startswith("rej_"):
+        if query.from_user.id != ADMIN_ID: return
+        target_id = int(data.split("_")[1])
+        await query.edit_message_caption(caption="❌ Rejected!")
+        try: await context.bot.send_message(chat_id=target_id, text="❌ আপনার প্রুফটি সঠিক নয়।")
+        except: pass
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    
+    # উইথড্র নম্বর হ্যান্ডলিং
     if context.user_data.get('waiting_for_number'):
         text = update.message.text
         cursor.execute("SELECT balance FROM users WHERE id=?", (user_id,))
         bal = cursor.fetchone()[0]
-        await context.bot.send_message(chat_id=LOG_CHANNEL_ID, 
-                                     text=f"💸 উইথড্র রিকোয়েস্ট!\n👤 নাম: {update.effective_user.first_name}\n🆔 আইডি: {user_id}\n💰 পরিমাণ: {bal:.2f} TK\n📞 নম্বর: {text}")
-        cursor.execute("UPDATE users SET balance = 0 WHERE id=?", (user_id,))
-        conn.commit()
-        context.user_data['waiting_for_number'] = False
-        await update.message.reply_text("✅ রিকোয়েস্ট পাঠানো হয়েছে!", reply_markup=get_main_menu())
+        
+        if bal >= MIN_WITHDRAW:
+            await context.bot.send_message(chat_id=LOG_CHANNEL_ID, 
+                                         text=f"💸 উইথড্র রিকোয়েস্ট!\n👤 নাম: {update.effective_user.first_name}\n🆔 আইডি: {user_id}\n💰 পরিমাণ: {bal:.2f} TK\n📞 নম্বর: {text}")
+            cursor.execute("UPDATE users SET balance = 0 WHERE id=?", (user_id,))
+            conn.commit()
+            context.user_data['waiting_for_number'] = False
+            await update.message.reply_text("✅ রিকোয়েস্ট পাঠানো হয়েছে!", reply_markup=get_main_menu())
+        else:
+            await update.message.reply_text("❌ ব্যালেন্স কম।")
+            context.user_data['waiting_for_number'] = False
 
 async def handle_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     photo_id = update.message.photo[-1].file_id
+    
+    # অ্যাডমিন প্যানেলে পাঠানোর জন্য বাটন
     keyboard = [[InlineKeyboardButton("✅ Approve 5 TK", callback_data=f"app_{user.id}_5")],
                 [InlineKeyboardButton("❌ Reject", callback_data=f"rej_{user.id}")]]
+    
     try:
         await context.bot.send_photo(chat_id=LOG_CHANNEL_ID, photo=photo_id, 
                                    caption=f"📩 নতুন প্রুফ\n👤 {user.first_name}\n🆔 {user.id}", 
                                    reply_markup=InlineKeyboardMarkup(keyboard))
-        await update.message.reply_text("✅ প্রুফ জমা হয়েছে।", reply_markup=get_main_menu())
-    except:
-        await update.message.reply_text("⚠️ এরর: বটকে লগ চ্যানেলে Admin করুন।")
+        await update.message.reply_text("✅ প্রুফ জমা হয়েছে। অ্যাডমিন চেক করে টাকা যোগ করে দিবে।", reply_markup=get_main_menu())
+    except Exception as e:
+        print(f"Error: {e}")
+        await update.message.reply_text("⚠️ এরর: বটকে লগ চ্যানেলে Admin করুন এবং মেসেজ পারমিশন দিন।")
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
+    
+    # সঠিক অর্ডারে হ্যান্ডলার অ্যাড করা
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.PHOTO, handle_proof))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), message_handler))
+    
+    print("Bot is running...")
     app.run_polling()
